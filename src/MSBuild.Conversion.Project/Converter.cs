@@ -15,10 +15,11 @@ namespace MSBuild.Conversion.Project
         private readonly IProjectRootElement _projectRootElement;
         private readonly bool _noBackup;
         private readonly bool _forceRemoveCustomImports;
+        private readonly bool _keepExplicitItemIncludes;
         private readonly ImmutableDictionary<string, Differ> _differs;
 
         public Converter(UnconfiguredProject project, BaselineProject sdkBaselineProject,
-            IProjectRootElement projectRootElement, bool noBackup, bool forceRemoveCustomImports)
+            IProjectRootElement projectRootElement, bool noBackup, bool forceRemoveCustomImports, bool keepExplicitItemIncludes)
         {
             _project = project ?? throw new ArgumentNullException(nameof(project));
             _sdkBaselineProject = sdkBaselineProject;
@@ -26,6 +27,7 @@ namespace MSBuild.Conversion.Project
             _noBackup = noBackup;
             _forceRemoveCustomImports = forceRemoveCustomImports;
             _differs = GetDiffers();
+            _keepExplicitItemIncludes = keepExplicitItemIncludes;
         }
 
         public void Convert(string outputPath)
@@ -46,11 +48,12 @@ namespace MSBuild.Conversion.Project
                 .RemoveDefaultedProperties(_sdkBaselineProject, _differs)
                 .RemoveUnnecessaryPropertiesNotInSDKByDefault(_sdkBaselineProject.ProjectStyle)
                 .AddTargetFrameworkProperty(_sdkBaselineProject, _sdkBaselineProject.TargetTFM)
+                .AddEnableDefaultItemsPropertyAsFalse(_keepExplicitItemIncludes)
                 .AddGenerateAssemblyInfoAsFalse(_sdkBaselineProject.ProjectStyle)
                 .AddDesktopProperties(_sdkBaselineProject)
                 .AddCommonPropertiesToTopLevelPropertyGroup()
-                .RemoveOrUpdateItems(_differs, _sdkBaselineProject, _sdkBaselineProject.TargetTFM)
-                .AddItemRemovesForIntroducedItems(_differs)
+                .RemoveOrUpdateItems(_differs, _sdkBaselineProject, _sdkBaselineProject.TargetTFM, _keepExplicitItemIncludes)
+                .AddItemRemovesForIntroducedItems(_differs, _keepExplicitItemIncludes)
                 .RemoveUnnecessaryTargetsIfTheyExist()
                 .RemoveWebExtensions(_sdkBaselineProject.ProjectStyle)
                 .ModifyProjectElement();

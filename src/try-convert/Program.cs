@@ -40,6 +40,7 @@ namespace MSBuild.Conversion
                 .AddOption(new Option(new[] { "--diff-only" }, "Produces a diff of the project to convert; no conversion is done") { Argument = new Argument<bool>(() => false) })
                 .AddOption(new Option(new[] { "--no-backup" }, "Converts projects, does not create a backup of the originals and removes packages.config file.") { Argument = new Argument<bool>(() => false) })
                 .AddOption(new Option(new[] { "--keep-current-tfms" }, "Converts project files but does not change any TFMs. If unspecified, TFMs may change.") { Argument = new Argument<bool>(() => false) })
+                .AddOption(new Option(new[] { "--keep-explicit-items" }, "Disable 'default item inclusion' to keep the existing explicit source references (useful when project are nested)") { Argument = new Argument<bool>(() => false) })
                 .AddOption(new Option(new[] { "--maui-conversion" }, "Attempt to convert Xamarin.Forms Projects to .NET MAUI projects. There may be additional manual work necessary after migrating such projects.") { Argument = new Argument<bool>(() => false) })
                 .AddOption(new Option(new[] { "--force-remove-custom-imports" }, "Force remove custom imports from the project file if set to true.") { Argument = new Argument<bool>(() => false) })
                 .AddOption(new Option(new[] { "-u", "--update" }, "Updates the try-convert tool to the latest available version") { Argument = new Argument<bool>(() => false) })
@@ -48,7 +49,7 @@ namespace MSBuild.Conversion
             return await parser.InvokeAsync(args).ConfigureAwait(false);
         }
 
-        public static int Run(string? project, string? workspace, string? msbuildPath, string? tfm, bool forceWebConversion, bool preview, bool diffOnly, bool noBackup, bool keepCurrentTfms, bool update, bool mauiConversion, bool forceRemoveCustomImports)
+        public static int Run(string? project, string? workspace, string? msbuildPath, string? tfm, bool forceWebConversion, bool preview, bool diffOnly, bool noBackup, bool keepCurrentTfms, bool update, bool mauiConversion, bool forceRemoveCustomImports, bool keepExplicitItems)
         {
             if (update)
             {
@@ -153,7 +154,7 @@ namespace MSBuild.Conversion
                     }
                     else
                     {
-                        var converter = new Converter(item.UnconfiguredProject, item.SdkBaselineProject, item.ProjectRootElement, noBackup, forceRemoveCustomImports);
+                        var converter = new Converter(item.UnconfiguredProject, item.SdkBaselineProject, item.ProjectRootElement, noBackup, forceRemoveCustomImports, keepExplicitItems);
                         converter.Convert(item.ProjectRootElement.FullPath);
                     }
                 }

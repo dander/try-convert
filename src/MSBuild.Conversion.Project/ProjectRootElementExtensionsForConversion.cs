@@ -184,7 +184,7 @@ namespace MSBuild.Conversion.Project
             }
         }
 
-        public static IProjectRootElement RemoveOrUpdateItems(this IProjectRootElement projectRootElement, ImmutableDictionary<string, Differ> differs, BaselineProject baselineProject, string tfm)
+        public static IProjectRootElement RemoveOrUpdateItems(this IProjectRootElement projectRootElement, ImmutableDictionary<string, Differ> differs, BaselineProject baselineProject, string tfm, bool keepExplicitItems)
         {
             foreach (var itemGroup in projectRootElement.ItemGroups)
             {
@@ -240,6 +240,11 @@ namespace MSBuild.Conversion.Project
                         // Yes, this might mean their references are broken, since this might not have been convertable to PackageReference.
                         // That's probably fine!
                         itemGroup.RemoveChild(item);
+                    }
+                    else if (keepExplicitItems)
+                    {
+                        // skip remaining steps which remove item references that would be included by implicit item rules
+                        continue;
                     }
                     else if (IsDesktopRemovableItem(baselineProject, itemGroup, item))
                     {
@@ -309,8 +314,13 @@ namespace MSBuild.Conversion.Project
             }
         }
 
-        public static IProjectRootElement AddItemRemovesForIntroducedItems(this IProjectRootElement projectRootElement, ImmutableDictionary<string, Differ> differs)
+        public static IProjectRootElement AddItemRemovesForIntroducedItems(this IProjectRootElement projectRootElement, ImmutableDictionary<string, Differ> differs, bool keepExplicitIncludes)
         {
+            if (keepExplicitIncludes)
+            {
+                return projectRootElement;
+            }
+
             var introducedItems = differs.Values
                                           .SelectMany(
                                             differ => differ.GetItemsDiff()
@@ -525,6 +535,19 @@ namespace MSBuild.Conversion.Project
                 {
                     projectRootElement.RemoveChild(b);
                 }
+            }
+
+            return projectRootElement;
+        }
+
+        public static IProjectRootElement AddEnableDefaultItemsPropertyAsFalse(this IProjectRootElement projectRootElement, bool keepExplicitItemIncludes)
+        {
+            if (keepExplicitItemIncludes)
+            {
+                var propGroup = MSBuildHelpers.GetOrCreateTopLevelPropertyGroupWithTFM(projectRootElement);
+                var enableDefaultItems = projectRootElement.CreatePropertyElement(MSBuildFacts.EnableDefaultItems);
+                enableDefaultItems.Value = "false";
+                propGroup.AppendChild(enableDefaultItems);
             }
 
             return projectRootElement;

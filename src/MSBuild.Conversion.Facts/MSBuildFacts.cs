@@ -313,5 +313,6 @@ namespace MSBuild.Conversion.Facts
         public const string TargetPlatformIdentifierNodeName = "TargetPlatformIdentifier";
         public const string UapValue = "UAP";
         public const string TargetPlatformVersionNodeName = "TargetPlatformVersion";
+        public const string EnableDefaultItems = "EnableDefaultItems";
     }
 }
